@@ -21,6 +21,7 @@ class ExportService {
       segment.buffer,
       masterSettings.speed,
       masterSettings.pitch,
+      preserveFormants: masterSettings.preserveFormants,
     );
     final wavBytes = WavEncoder.encode(processed);
     final tempDir = await getTemporaryDirectory();
@@ -47,6 +48,7 @@ class ExportService {
         seg.buffer,
         masterSettings.speed,
         masterSettings.pitch,
+        preserveFormants: masterSettings.preserveFormants,
       );
       final wavBytes = WavEncoder.encode(processed);
       archive.addFile(

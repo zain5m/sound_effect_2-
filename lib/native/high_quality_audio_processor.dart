@@ -11,6 +11,7 @@ class HighQualityAudioProcessor {
     PcmAudioBuffer input, {
     required double speed,
     required int pitchSemitones,
+    bool preserveFormants = true,
   }) {
     if (input.length == 0 || input.channels < 1 || input.channels > 8) {
       return null;
@@ -47,6 +48,7 @@ class HighQualityAudioProcessor {
         channels: input.channels,
         speed: speed,
         pitchSemitones: pitchSemitones.toDouble(),
+        preserveFormants: preserveFormants,
       );
 
       return PcmAudioBuffer.fromInterleaved(

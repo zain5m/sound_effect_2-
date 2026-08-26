@@ -58,7 +58,8 @@ class AudioAppProvider extends ChangeNotifier {
   bool get hasPendingChanges {
     final hasChanges =
         editingSettings.speed != appliedSettings.speed ||
-        editingSettings.pitch != appliedSettings.pitch;
+        editingSettings.pitch != appliedSettings.pitch ||
+        editingSettings.preserveFormants != appliedSettings.preserveFormants;
     Dev.console([
       'hasPendingChanges',
       'speed: ${editingSettings.speed} vs ${appliedSettings.speed}',
@@ -102,6 +103,7 @@ class AudioAppProvider extends ChangeNotifier {
           audioBuffer!,
           appliedSettings.speed,
           appliedSettings.pitch,
+          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
@@ -116,6 +118,7 @@ class AudioAppProvider extends ChangeNotifier {
           seg.buffer,
           appliedSettings.speed,
           appliedSettings.pitch,
+          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
@@ -186,6 +189,12 @@ class AudioAppProvider extends ChangeNotifier {
   void setPitch(int pitch) {
     Dev.console(['setPitch: $pitch']);
     editingSettings.pitch = pitch;
+    notifyListeners();
+  }
+
+  void setPreserveFormants(bool value) {
+    Dev.console(['setPreserveFormants: $value']);
+    editingSettings.preserveFormants = value;
     notifyListeners();
   }
 
@@ -370,6 +379,7 @@ class AudioAppProvider extends ChangeNotifier {
           audioBuffer!,
           appliedSettings.speed,
           appliedSettings.pitch,
+          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
@@ -431,6 +441,7 @@ class AudioAppProvider extends ChangeNotifier {
           seg.buffer,
           appliedSettings.speed,
           appliedSettings.pitch,
+          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
