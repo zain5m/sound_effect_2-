@@ -8,6 +8,10 @@ import 'native_bindings.dart';
 class StretchFfi {
   StretchFfi._();
 
+  /// Above this frequency the spectrum is shifted instead of scaled, which is
+  /// what keeps transposed audio from sounding smeared.
+  static const double defaultTonalityLimitHz = 8000;
+
   static int testConnection() => stretchTestConnection();
 
   static Pointer<Void> create({
@@ -42,6 +46,9 @@ class StretchFfi {
     required int channels,
     required double speed,
     required double pitchSemitones,
+    double tonalityLimitHz = defaultTonalityLimitHz,
+    bool preserveFormants = true,
+    double formantBaseHz = 0,
   }) {
     if (input.length != inputFrames * channels) {
       throw ArgumentError.value(
@@ -55,7 +62,7 @@ class StretchFfi {
     final outputPtr = calloc<Float>(outputFrames * channels);
     try {
       inputPtr.asTypedList(input.length).setAll(0, input);
-      final result = stretchProcess(
+      final result = stretchProcessEx(
         processor,
         inputPtr,
         inputFrames,
@@ -63,6 +70,9 @@ class StretchFfi {
         outputFrames,
         speed,
         pitchSemitones,
+        tonalityLimitHz,
+        preserveFormants ? 1 : 0,
+        formantBaseHz,
       );
       if (result != 0) {
         throw StateError('فشلت معالجة الصوت Native: $result');

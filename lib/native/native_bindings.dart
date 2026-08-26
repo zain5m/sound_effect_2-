@@ -40,6 +40,33 @@ typedef StretchProcessDart =
       double pitchSemitones,
     );
 
+typedef StretchProcessExNative =
+    Int32 Function(
+      Pointer<Void> processor,
+      Pointer<Float> input,
+      Int32 inputFrames,
+      Pointer<Float> output,
+      Int32 outputFrames,
+      Float speed,
+      Float pitchSemitones,
+      Float tonalityLimitHz,
+      Int32 preserveFormants,
+      Float formantBaseHz,
+    );
+typedef StretchProcessExDart =
+    int Function(
+      Pointer<Void> processor,
+      Pointer<Float> input,
+      int inputFrames,
+      Pointer<Float> output,
+      int outputFrames,
+      double speed,
+      double pitchSemitones,
+      double tonalityLimitHz,
+      int preserveFormants,
+      double formantBaseHz,
+    );
+
 final stretchTestConnection = nativeLib
     .lookupFunction<StretchTestNative, StretchTestDart>(
       'stretch_test_connection',
@@ -55,4 +82,8 @@ final stretchReset = nativeLib
 final stretchProcess = nativeLib
     .lookupFunction<StretchProcessNative, StretchProcessDart>(
       'stretch_process',
+    );
+final stretchProcessEx = nativeLib
+    .lookupFunction<StretchProcessExNative, StretchProcessExDart>(
+      'stretch_process_ex',
     );

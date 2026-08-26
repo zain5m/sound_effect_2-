@@ -22,6 +22,26 @@ int stretch_process(
     float pitchSemitones
 );
 
+// Offline render with quality controls.
+//   tonalityLimitHz    - frequencies above this are shifted linearly instead of
+//                        being scaled, which keeps the timbre from smearing when
+//                        transposing. <= 0 disables the limit.
+//   preserveFormants   - keeps the original formants while transposing, so voices
+//                        stay natural instead of turning "chipmunk"/"muddy".
+//   formantBaseHz      - fundamental hint for formant analysis, 0 = auto detect.
+int stretch_process_ex(
+    StretchProcessor* processor,
+    const float* input,
+    int inputFrames,
+    float* output,
+    int outputFrames,
+    float speed,
+    float pitchSemitones,
+    float tonalityLimitHz,
+    int preserveFormants,
+    float formantBaseHz
+);
+
 #ifdef __cplusplus
 }
 #endif
