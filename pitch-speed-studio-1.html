@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>وحدة التحكم — السرعة والحدة</title>
+<style>
+  :root{
+    --bg: #10161A;
+    --panel: #182126;
+    --panel-2: #1E282E;
+    --edge: #2A363D;
+    --text: #E9E4D8;
+    --text-dim: #8FA0A6;
+    --amber: #E8A33D;
+    --amber-dim: #7A5A26;
+    --teal: #4FD1C5;
+    --teal-dim: #285F5A;
+    --danger: #D9695A;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #17222A 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", Arial, sans-serif;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 28px 14px 60px;
+  }
+  .num{ font-family: "SFMono-Regular", Consolas, "Cascadia Mono", "Liberation Mono", monospace; direction:ltr; }
+
+  .unit{
+    width:100%;
+    max-width: 620px;
+    background: linear-gradient(180deg, var(--panel) 0%, #141C21 100%);
+    border: 1px solid var(--edge);
+    border-radius: 14px;
+    box-shadow:
+      0 30px 60px -30px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+    padding: 22px 22px 26px;
+    position: relative;
+  }
+  .rivet{
+    position:absolute; width:6px; height:6px; border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #4a5a62, #1a2226 70%);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.6);
+  }
+  .rivet.tl{ top:10px; left:10px; } .rivet.tr{ top:10px; right:10px; }
+  .rivet.bl{ bottom:10px; left:10px; } .rivet.br{ bottom:10px; right:10px; }
+
+  header{ margin-bottom: 18px; padding-left: 4px; }
+  h1{
+    margin:0 0 4px;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header p{
+    margin:0; color: var(--text-dim); font-size: 13px; line-height:1.6;
+    max-width: 46ch;
+  }
+
+  .drop{
+    border: 1.5px dashed var(--edge);
+    border-radius: 10px;
+    padding: 18px;
+    text-align:center;
+    cursor:pointer;
+    background: rgba(255,255,255,0.015);
+    transition: border-color .15s ease, background .15s ease;
+    margin-bottom: 18px;
+  }
+  .drop:hover, .drop.drag{ border-color: var(--amber); background: rgba(232,163,61,0.05); }
+  .drop .fname{ color: var(--amber); font-size: 13px; margin-top:4px; word-break: break-all; }
+  .drop .hint{ color: var(--text-dim); font-size: 12.5px; }
+  .drop input{ display:none; }
+
+  .transport{
+    background: var(--panel-2);
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    padding: 14px 14px 12px;
+    margin-bottom: 20px;
+  }
+  .seek{
+    position:relative; height: 34px; border-radius:6px;
+    background: #0F1518;
+    border: 1px solid var(--edge);
+    cursor:pointer;
+    overflow:hidden;
+    margin-bottom: 8px;
+  }
+  .seek .fill{
+    position:absolute; inset:0 auto 0 0; width:0%;
+    background: linear-gradient(90deg, var(--teal-dim), var(--teal));
+    opacity: 0.55;
+  }
+  .seek .cursor{
+    position:absolute; top:0; bottom:0; width:2px; background: var(--teal);
+    right: 100%; box-shadow: 0 0 8px var(--teal);
+  }
+  .times{
+    display:flex; justify-content:space-between;
+    font-size: 12px; color: var(--text-dim); margin-bottom:10px;
+  }
+  .buttons{ display:flex; align-items:center; gap:10px; }
+  button{
+    font-family: inherit; cursor:pointer; border:none;
+    border-radius: 8px; padding: 9px 16px; font-size: 13.5px;
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--edge);
+    transition: transform .08s ease, border-color .15s ease;
+  }
+  button:hover{ border-color:#3a4a52; }
+  button:active{ transform: scale(0.97); }
+  button:disabled{ opacity:0.4; cursor:not-allowed; }
+  .play-btn{
+    background: linear-gradient(180deg, var(--amber), #C8842A);
+    color: #1a1200; font-weight:700; border:none;
+    padding: 9px 22px;
+  }
+  .ghost{ background: transparent; }
+
+  .faders{
+    display:grid; grid-template-columns: 1fr; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .fader{
+    background: var(--panel-2);
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .fader .label-row{
+    display:flex; justify-content:space-between; align-items:center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .fader .label{ font-size: 13px; color: var(--text-dim); }
+  .fader .readout{
+    font-size: 20px; font-weight:700;
+    color: var(--amber);
+    text-align:center;
+  }
+  .fader.speed .readout{ color: var(--teal); }
+  .icon-reset{
+    width: 30px; height:30px; padding:0; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 15px; line-height:1; color: var(--text-dim);
+    flex-shrink:0;
+  }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height: 34px; background:transparent; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height: 6px; border-radius: 4px;
+    background: linear-gradient(90deg, #2A363D, #384850);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; margin-top:-9px;
+    width: 22px; height:22px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #fff2, transparent 60%), var(--amber);
+    border: 2px solid #1a1200;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  }
+  .fader.speed input[type=range]::-webkit-slider-thumb{ background: radial-gradient(circle at 35% 30%, #fff2, transparent 60%), var(--teal); }
+  input[type=range]::-moz-range-track{ height:6px; border-radius:4px; background:#2A363D; }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; border:2px solid #1a1200;
+    background: var(--amber);
+  }
+  .fader.speed input[type=range]::-moz-range-thumb{ background: var(--teal); }
+  .scale{
+    display:flex; justify-content:space-between;
+    font-size: 10.5px; color: #5a6a70; margin-top:2px;
+  }
+  .subrow{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid var(--edge);
+  }
+  .subrow-label{ font-size: 12.5px; color: var(--text-dim); }
+  .subrow-value{ display:flex; align-items:baseline; gap: 8px; }
+  .subrow-value .cur{ font-size: 16px; font-weight:700; color: var(--text); }
+  .subrow-value .orig{ font-size: 13px; color: var(--text-dim); }
+  .subrow-value .arrow-sep{ font-size: 12px; color: #5a6a70; }
+
+  .export-row{ display:flex; gap:10px; align-items:center; }
+  .export-row button{ flex:1; }
+  .export-main{
+    background: linear-gradient(180deg, var(--teal), #2E9C90);
+    color:#04201d; font-weight:700; border:none;
+  }
+  .progress-wrap{
+    height:4px; border-radius:2px; background:#0F1518; overflow:hidden; margin-top:10px;
+    display:none;
+  }
+  .progress-wrap.on{ display:block; }
+  .progress-bar{ height:100%; width:0%; background: var(--teal); transition: width .1s linear; }
+
+  .status{ margin-top: 12px; font-size: 12px; color: var(--text-dim); min-height: 16px; }
+  .status.warn{ color: var(--danger); }
+
+  @media (max-width: 420px){
+    .faders{ grid-template-columns: 1fr; }
+    .unit{ padding: 16px 14px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="unit">
+  <div class="rivet tl"></div><div class="rivet tr"></div>
+  <div class="rivet bl"></div><div class="rivet br"></div>
+
+  <header>
+    <h1>وحدة التحكم بالسرعة والحدة</h1>
+    <p>ارفع مقطعًا صوتيًا وحرّك المقبضين لتغيير السرعة أو حدة الصوت كلٌ على حدة أثناء التشغيل — مع عرض حي لدقة الإيقاع (BPM) والمفتاح الموسيقي، ثم صدّر النتيجة كملف WAV بجودة 24-bit.</p>
+  </header>
+
+  <label class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept="audio/*">
+    <div class="hint" id="dropHint">اضغط هنا لاختيار ملف صوتي (MP3 / WAV) أو اسحبه وأفلته</div>
+    <div class="fname" id="fname"></div>
+  </label>
+
+  <div class="transport">
+    <div class="seek" id="seek">
+      <div class="fill" id="seekFill"></div>
+      <div class="cursor" id="seekCursor"></div>
+    </div>
+    <div class="times">
+      <span class="num" id="curTime">00:00</span>
+      <span class="num" id="durTime">00:00</span>
+    </div>
+    <div class="buttons">
+      <button class="play-btn" id="playBtn" disabled>تشغيل</button>
+      <button class="ghost" id="stopBtn" disabled>إيقاف</button>
+    </div>
+  </div>
+
+  <div class="faders">
+    <div class="fader speed">
+      <div class="label-row">
+        <span class="label">السرعة (Tempo)</span>
+        <span class="readout num" id="speedReadout">1.00×</span>
+        <button class="icon-reset" id="speedReset" title="إعادة ضبط">↺</button>
+      </div>
+      <input type="range" id="speedSlider" min="0.5" max="2" step="0.01" value="1">
+      <div class="scale"><span>0.5×</span><span>1×</span><span>2×</span></div>
+      <div class="subrow">
+        <span class="subrow-label">دقة في الدقيقة (BPM)</span>
+        <span class="subrow-value">
+          <span class="cur num" id="bpmCur">--</span>
+          <span class="arrow-sep">←</span>
+          <span class="orig num" id="bpmOrig">--</span>
+        </span>
+      </div>
+    </div>
+    <div class="fader pitch">
+      <div class="label-row">
+        <span class="label">الحدة (Pitch)</span>
+        <span class="readout num" id="pitchReadout">0 ST</span>
+        <button class="icon-reset" id="pitchReset" title="إعادة ضبط">↺</button>
+      </div>
+      <input type="range" id="pitchSlider" min="-12" max="12" step="1" value="0">
+      <div class="scale"><span>‎-12</span><span>0</span><span>+12</span></div>
+      <div class="subrow">
+        <span class="subrow-label">المفتاح (Key)</span>
+        <span class="subrow-value">
+          <span class="cur" id="keyCur">--</span>
+          <span class="arrow-sep">←</span>
+          <span class="orig" id="keyOrig">--</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="export-row">
+    <button class="export-main" id="exportBtn" disabled>تصدير الملف المعدّل (WAV)</button>
+  </div>
+  <div class="progress-wrap" id="progWrap"><div class="progress-bar" id="progBar"></div></div>
+
+  <div class="status" id="status">لم يتم تحميل أي ملف بعد.</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   1) FFT — Radix-2 iterative Cooley-Tukey (in place, real+imag)
+   ============================================================ */
+function fftInPlace(re, im, invert){
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++){
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j){
+      let t = re[i]; re[i] = re[j]; re[j] = t;
+      t = im[i]; im[i] = im[j]; im[j] = t;
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1){
+    const ang = (invert ? 2 : -2) * Math.PI / len;
+    const wr0 = Math.cos(ang), wi0 = Math.sin(ang);
+    for (let i = 0; i < n; i += len){
+      let curWr = 1, curWi = 0;
+      const half = len >> 1;
+      for (let j = 0; j < half; j++){
+        const ur = re[i + j], ui = im[i + j];
+        const vr = re[i + j + half] * curWr - im[i + j + half] * curWi;
+        const vi = re[i + j + half] * curWi + im[i + j + half] * curWr;
+        re[i + j] = ur + vr; im[i + j] = ui + vi;
+        re[i + j + half] = ur - vr; im[i + j + half] = ui - vi;
+        const nWr = curWr * wr0 - curWi * wi0;
+        const nWi = curWr * wi0 + curWi * wr0;
+        curWr = nWr; curWi = nWi;
+      }
+    }
+  }
+  if (invert){
+    for (let i = 0; i < n; i++){ re[i] /= n; im[i] /= n; }
+  }
+}
+
+function hannWindow(N){
+  const w = new Float32Array(N);
+  for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+  return w;
+}
+
+/* ============================================================
+   2) Phase Vocoder — time-stretch a mono channel, pitch preserved.
+      Pull-based: generates output samples on demand.
+      "beta" = output-length / input-length ratio, changeable live.
+   ============================================================ */
+const FRAME_SIZE = 4096;
+const HOP_A = 512;
+const HALF = FRAME_SIZE / 2;
+const WINDOW = hannWindow(FRAME_SIZE);
+const TWO_PI = 2 * Math.PI;
+
+function PhaseVocoder(sourceData){
+  this.data = sourceData;
+  this.readPos = 0;
+  this.beta = 1;
+  this.lastPhase = new Float32Array(HALF + 1);
+  this.sumPhase = new Float32Array(HALF + 1);
+  this.ola = new Float32Array(FRAME_SIZE);
+  this.olaW = new Float32Array(FRAME_SIZE);
+  this.fifo = [];
+  this.ended = false;
+  this._re = new Float32Array(FRAME_SIZE);
+  this._im = new Float32Array(FRAME_SIZE);
+  this._outRe = new Float32Array(FRAME_SIZE);
+  this._outIm = new Float32Array(FRAME_SIZE);
+  this._mag = new Float32Array(HALF + 1);
+  this._phase = new Float32Array(HALF + 1);
+  this._peaks = new Int32Array(HALF + 1);
+  this._peakOf = new Int32Array(HALF + 1);
+}
+
+PhaseVocoder.prototype.reset = function(atFraction){
+  this.readPos = Math.max(0, Math.floor((atFraction || 0) * this.data.length));
+  this.lastPhase.fill(0);
+  this.sumPhase.fill(0);
+  this.ola.fill(0);
+  this.olaW.fill(0);
+  this.fifo.length = 0;
+  this.ended = false;
+};
+
+PhaseVocoder.prototype._processFrame = function(){
+  const data = this.data, N = FRAME_SIZE;
+  if (this.readPos >= data.length){ this.ended = true; return; }
+
+  const re = this._re, im = this._im;
+  for (let i = 0; i < N; i++){
+    const idx = this.readPos + i;
+    const s = idx < data.length ? data[idx] : 0;
+    re[i] = s * WINDOW[i];
+    im[i] = 0;
+  }
+  fftInPlace(re, im, false);
+
+  const mag = this._mag, phase = this._phase;
+  for (let k = 0; k <= HALF; k++){
+    mag[k] = Math.hypot(re[k], im[k]);
+    phase[k] = Math.atan2(im[k], re[k]);
+  }
+
+  let hopS = Math.round(HOP_A * this.beta);
+  if (hopS < 1) hopS = 1;
+  if (hopS > N - 1) hopS = N - 1;
+
+  /* --- Identity phase locking (Laroche/Dolson) ---
+     Group bins around each spectral peak and force them to move in
+     phase-lockstep with that peak instead of drifting independently.
+     This is what removes the "metallic / processed" phase-vocoder
+     character and keeps transients and timbre solid and natural. */
+  const peaks = this._peaks;
+  let peakCount = 0;
+  for (let k = 1; k < HALF; k++){
+    if (mag[k] > mag[k - 1] && mag[k] >= mag[k + 1] && mag[k] > 1e-6){
+      peaks[peakCount++] = k;
+    }
+  }
+  if (peakCount === 0){ peaks[peakCount++] = 0; }
+
+  const peakOf = this._peakOf;
+  let pi = 0;
+  for (let k = 0; k <= HALF; k++){
+    while (pi < peakCount - 1 && Math.abs(peaks[pi + 1] - k) <= Math.abs(peaks[pi] - k)) pi++;
+    peakOf[k] = peaks[pi];
+  }
+
+  for (let p = 0; p < peakCount; p++){
+    const pk = peaks[p];
+    const expected = TWO_PI * pk * HOP_A / N;
+    let delta = phase[pk] - this.lastPhase[pk] - expected;
+    delta -= TWO_PI * Math.round(delta / TWO_PI);
+    const trueFreq = (TWO_PI * pk / N) + (delta / HOP_A);
+    this.sumPhase[pk] += trueFreq * hopS;
+  }
+
+  const outRe = this._outRe, outIm = this._outIm;
+  outRe.fill(0); outIm.fill(0);
+  for (let k = 0; k <= HALF; k++){
+    const pk = peakOf[k];
+    const ph = this.sumPhase[pk] + (phase[k] - phase[pk]);
+    const m = mag[k];
+    outRe[k] = m * Math.cos(ph);
+    outIm[k] = m * Math.sin(ph);
+    if (k > 0 && k < HALF){
+      outRe[N - k] = outRe[k];
+      outIm[N - k] = -outIm[k];
+    }
+  }
+  for (let k = 0; k <= HALF; k++) this.lastPhase[k] = phase[k];
+  fftInPlace(outRe, outIm, true);
+
+  const ola = this.ola, olaW = this.olaW;
+  for (let i = 0; i < N; i++){
+    ola[i] += outRe[i] * WINDOW[i];
+    olaW[i] += WINDOW[i] * WINDOW[i];
+  }
+  for (let i = 0; i < hopS; i++){
+    const w = olaW[i] > 1e-6 ? olaW[i] : 1;
+    this.fifo.push(ola[i] / w);
+  }
+  ola.copyWithin(0, hopS);
+  ola.fill(0, N - hopS, N);
+  olaW.copyWithin(0, hopS);
+  olaW.fill(0, N - hopS, N);
+
+  this.readPos += HOP_A;
+};
+
+PhaseVocoder.prototype.pull = function(n){
+  let guard = 0;
+  while (this.fifo.length < n && !this.ended && guard < 4096){
+    this._processFrame();
+    guard++;
+  }
+  const take = Math.min(n, this.fifo.length);
+  const out = new Float32Array(n);
+  for (let i = 0; i < take; i++) out[i] = this.fifo[i];
+  this.fifo.splice(0, take);
+  return out;
+};
+
+/* ============================================================
+   3) Resampler — linear-interpolation pitch shift on top of the
+      vocoder's output stream (rate = pitch ratio).
+   ============================================================ */
+function Resampler(vocoder){
+  this.vocoder = vocoder;
+  this.rate = 1;
+  this.pos = 0;
+  this.buf = [];
+}
+
+Resampler.prototype.reset = function(){
+  this.pos = 0;
+  this.buf.length = 0;
+};
+
+Resampler.prototype.process = function(n){
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++){
+    const i1 = Math.floor(this.pos);
+    const need = i1 + 3;
+    while (this.buf.length <= need){
+      const chunk = this.vocoder.pull(Math.max(256, need - this.buf.length + 1));
+      if (chunk.length === 0){
+        this.buf.push(0);
+      } else {
+        for (let j = 0; j < chunk.length; j++) this.buf.push(chunk[j]);
+      }
+    }
+    const t = this.pos - i1;
+    const p0 = this.buf[i1 - 1] !== undefined ? this.buf[i1 - 1] : (this.buf[i1] || 0);
+    const p1 = this.buf[i1]     !== undefined ? this.buf[i1]     : 0;
+    const p2 = this.buf[i1 + 1] !== undefined ? this.buf[i1 + 1] : p1;
+    const p3 = this.buf[i1 + 2] !== undefined ? this.buf[i1 + 2] : p2;
+    const t2 = t * t, t3 = t2 * t;
+    out[i] = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
+    this.pos += this.rate;
+  }
+  const consumed = Math.floor(this.pos) - 2;
+  if (consumed > 2048){
+    this.buf.splice(0, consumed);
+    this.pos -= consumed;
+  }
+  return out;
+};
+
+/* ============================================================
+   4) Engine — wires vocoders/resamplers per channel to Web Audio
+   ============================================================ */
+const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+
+function Engine(){
+  this.ctx = null;
+  this.node = null;
+  this.audioBuffer = null;
+  this.channels = [];      // { vocoder, resampler, data }
+  this.sourceLength = 0;
+  this.sampleRate = 44100;
+  this.isPlaying = false;
+  this.semitones = 0;
+  this.speed = 1;
+  this.onEnded = null;
+  this.onProgress = null;
+}
+
+Engine.prototype._pitchRatio = function(){
+  return Math.pow(2, this.semitones / 12);
+};
+Engine.prototype._beta = function(){
+  return this._pitchRatio() / this.speed;
+};
+
+Engine.prototype.load = function(audioBuffer){
+  this.stop();
+  this.audioBuffer = audioBuffer;
+  this.sampleRate = audioBuffer.sampleRate;
+  this.sourceLength = audioBuffer.length;
+  const nCh = Math.min(2, audioBuffer.numberOfChannels);
+  this.channels = [];
+  for (let c = 0; c < nCh; c++){
+    const data = audioBuffer.getChannelData(c);
+    const voc = new PhaseVocoder(data);
+    const res = new Resampler(voc);
+    this.channels.push({ vocoder: voc, resampler: res, data: data });
+  }
+  this.setParams(this.semitones, this.speed);
+};
+
+Engine.prototype.setParams = function(semitones, speed){
+  this.semitones = semitones;
+  this.speed = speed;
+  const beta = this._beta();
+  const rate = this._pitchRatio();
+  for (const ch of this.channels){
+    ch.vocoder.beta = beta;
+    ch.resampler.rate = rate;
+  }
+};
+
+Engine.prototype._ensureCtx = function(){
+  if (!this.ctx){
+    this.ctx = new AudioCtxClass();
+    const nCh = this.channels.length || 1;
+    const bufSize = 8192;
+    const node = this.ctx.createScriptProcessor(bufSize, nCh, nCh);
+    const self = this;
+    node.onaudioprocess = function(e){
+      if (!self.isPlaying){
+        for (let c = 0; c < nCh; c++) e.outputBuffer.getChannelData(c).fill(0);
+        return;
+      }
+      let anyEnded = true;
+      for (let c = 0; c < nCh; c++){
+        const ch = self.channels[c];
+        const out = ch.resampler.process(bufSize);
+        e.outputBuffer.getChannelData(c).set(out);
+        if (!(ch.vocoder.ended && ch.vocoder.fifo.length === 0 && ch.resampler.buf.length <= 2)) anyEnded = false;
+      }
+      if (self.onProgress){
+        const frac = self.channels[0] ? self.channels[0].vocoder.readPos / self.sourceLength : 0;
+        self.onProgress(Math.min(1, frac));
+      }
+      if (anyEnded){
+        self.isPlaying = false;
+        if (self.onEnded) self.onEnded();
+      }
+    };
+    node.connect(this.ctx.destination);
+    this.node = node;
+  }
+};
+
+Engine.prototype.play = function(){
+  if (!this.audioBuffer) return;
+  this._ensureCtx();
+  if (this.ctx.state === "suspended") this.ctx.resume();
+  this.isPlaying = true;
+};
+
+Engine.prototype.pause = function(){
+  this.isPlaying = false;
+};
+
+Engine.prototype.stop = function(){
+  this.isPlaying = false;
+  if (this.channels.length){
+    for (const ch of this.channels){ ch.vocoder.reset(0); ch.resampler.reset(); }
+  }
+};
+
+Engine.prototype.seekTo = function(fraction){
+  for (const ch of this.channels){
+    ch.vocoder.reset(fraction);
+    ch.resampler.reset();
+  }
+};
+
+Engine.prototype.currentFraction = function(){
+  if (!this.channels.length || !this.sourceLength) return 0;
+  return Math.min(1, this.channels[0].vocoder.readPos / this.sourceLength);
+};
+
+/* Offline export: fresh vocoders/resamplers, fixed current params */
+Engine.prototype.exportWav = function(onProgress){
+  return new Promise((resolve) => {
+    const nCh = this.channels.length;
+    const srcLen = this.sourceLength;
+    const speed = this.speed;
+    const beta = this._beta();
+    const rate = this._pitchRatio();
+    const outSampleRate = this.sampleRate;
+    const targetLen = Math.max(1, Math.ceil(srcLen / speed));
+
+    const workers = [];
+    for (let c = 0; c < nCh; c++){
+      const voc = new PhaseVocoder(this.channels[c].data);
+      voc.beta = beta;
+      const res = new Resampler(voc);
+      res.rate = rate;
+      workers.push(res);
+    }
+    const outputs = [];
+    for (let c = 0; c < nCh; c++) outputs.push(new Float32Array(targetLen));
+
+    let writePos = 0;
+    const chunkSize = 4096;
+    const chunksPerBatch = 20;
+
+    function step(){
+      for (let b = 0; b < chunksPerBatch && writePos < targetLen; b++){
+        const n = Math.min(chunkSize, targetLen - writePos);
+        for (let c = 0; c < nCh; c++){
+          const out = workers[c].process(n);
+          outputs[c].set(out, writePos);
+        }
+        writePos += n;
+      }
+      if (onProgress) onProgress(Math.min(1, writePos / targetLen));
+      if (writePos < targetLen){
+        setTimeout(step, 0);
+      } else {
+        resolve({ channels: outputs, sampleRate: outSampleRate });
+      }
+    }
+    step();
+  });
+};
+
+/* ============================================================
+   5) WAV encoding (24-bit PCM)
+   ============================================================ */
+function encodeWav(channelsData, sampleRate){
+  const numCh = channelsData.length;
+  const len = channelsData[0].length;
+  const bytesPerSample = 3; // 24-bit
+  const blockAlign = numCh * bytesPerSample;
+  const dataSize = len * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  function writeStr(offset, str){
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 24, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  let offset = 44;
+  const maxVal = 8388607; // 2^23 - 1
+  for (let i = 0; i < len; i++){
+    for (let c = 0; c < numCh; c++){
+      let s = channelsData[c][i];
+      s = Math.max(-1, Math.min(1, s));
+      let v = Math.round(s * maxVal);
+      view.setUint8(offset, v & 0xFF);
+      view.setUint8(offset + 1, (v >> 8) & 0xFF);
+      view.setUint8(offset + 2, (v >> 16) & 0xFF);
+      offset += 3;
+    }
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+/* ============================================================
+   5.5) BPM & Key detection (run once per loaded file)
+   ============================================================ */
+function detectBPM(mono, sampleRate){
+  const hop = 512;
+  const frames = Math.floor((mono.length - hop) / hop);
+  if (frames < 8) return null;
+  const env = new Float32Array(frames);
+  for (let i = 0; i < frames; i++){
+    let sum = 0;
+    const start = i * hop;
+    for (let j = 0; j < hop; j++){ const s = mono[start + j]; sum += s * s; }
+    env[i] = Math.sqrt(sum / hop);
+  }
+  const nov = new Float32Array(frames);
+  for (let i = 1; i < frames; i++){
+    const d = env[i] - env[i - 1];
+    nov[i] = d > 0 ? d : 0;
+  }
+  const frameRate = sampleRate / hop;
+  const lagMin = Math.max(1, Math.floor(frameRate * 60 / 200));
+  const lagMax = Math.min(frames - 1, Math.ceil(frameRate * 60 / 60));
+  let bestLag = lagMin, bestVal = -Infinity;
+  for (let lag = lagMin; lag <= lagMax; lag++){
+    let sum = 0;
+    for (let i = 0; i + lag < frames; i++) sum += nov[i] * nov[i + lag];
+    if (sum > bestVal){ bestVal = sum; bestLag = lag; }
+  }
+  if (bestVal <= 0) return null;
+  let bpm = 60 * frameRate / bestLag;
+  while (bpm < 70) bpm *= 2;
+  while (bpm > 180) bpm /= 2;
+  return Math.round(bpm);
+}
+
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const KS_MAJOR = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+const KS_MINOR = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+
+function detectKey(mono, sampleRate){
+  const N = 4096;
+  const win = hannWindow(N);
+  const chroma = new Float32Array(12);
+  const re = new Float32Array(N), im = new Float32Array(N);
+  const minFreq = 65, maxFreq = 2100;
+  let frameCount = 0;
+  for (let start = 0; start + N <= mono.length; start += N){
+    for (let i = 0; i < N; i++){ re[i] = mono[start + i] * win[i]; im[i] = 0; }
+    fftInPlace(re, im, false);
+    const half = N / 2;
+    for (let k = 1; k < half; k++){
+      const freq = k * sampleRate / N;
+      if (freq < minFreq || freq > maxFreq) continue;
+      const mag = Math.hypot(re[k], im[k]);
+      const midi = 69 + 12 * Math.log2(freq / 440);
+      const pc = ((Math.round(midi) % 12) + 12) % 12;
+      chroma[pc] += mag;
+    }
+    frameCount++;
+    if (frameCount > 4000) break;
+  }
+  let sum = 0; for (let i = 0; i < 12; i++) sum += chroma[i];
+  if (sum <= 0) return null;
+  for (let i = 0; i < 12; i++) chroma[i] /= sum;
+
+  let bestScore = -Infinity, bestRoot = 0, bestMinor = false;
+  for (let root = 0; root < 12; root++){
+    let scoreMaj = 0, scoreMin = 0;
+    for (let i = 0; i < 12; i++){
+      scoreMaj += chroma[i] * KS_MAJOR[(i - root + 12) % 12];
+      scoreMin += chroma[i] * KS_MINOR[(i - root + 12) % 12];
+    }
+    if (scoreMaj > bestScore){ bestScore = scoreMaj; bestRoot = root; bestMinor = false; }
+    if (scoreMin > bestScore){ bestScore = scoreMin; bestRoot = root; bestMinor = true; }
+  }
+  return { root: bestRoot, minor: bestMinor };
+}
+
+/* ============================================================
+   6) UI wiring
+   ============================================================ */
+const engine = new Engine();
+
+const fileInput = document.getElementById("fileInput");
+const dropZone = document.getElementById("dropZone");
+const dropHint = document.getElementById("dropHint");
+const fnameEl = document.getElementById("fname");
+const playBtn = document.getElementById("playBtn");
+const stopBtn = document.getElementById("stopBtn");
+const seek = document.getElementById("seek");
+const seekFill = document.getElementById("seekFill");
+const seekCursor = document.getElementById("seekCursor");
+const curTimeEl = document.getElementById("curTime");
+const durTimeEl = document.getElementById("durTime");
+const pitchSlider = document.getElementById("pitchSlider");
+const speedSlider = document.getElementById("speedSlider");
+const pitchReadout = document.getElementById("pitchReadout");
+const speedReadout = document.getElementById("speedReadout");
+const pitchReset = document.getElementById("pitchReset");
+const speedReset = document.getElementById("speedReset");
+const bpmCurEl = document.getElementById("bpmCur");
+const bpmOrigEl = document.getElementById("bpmOrig");
+const keyCurEl = document.getElementById("keyCur");
+const keyOrigEl = document.getElementById("keyOrig");
+const exportBtn = document.getElementById("exportBtn");
+const progWrap = document.getElementById("progWrap");
+const progBar = document.getElementById("progBar");
+const statusEl = document.getElementById("status");
+
+let originalDuration = 0;
+let uiRafHandle = null;
+
+function fmtTime(sec){
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+function setStatus(msg, warn){
+  statusEl.textContent = msg;
+  statusEl.className = "status" + (warn ? " warn" : "");
+}
+
+function updateReadouts(){
+  const semis = parseInt(pitchSlider.value, 10);
+  const spd = parseFloat(speedSlider.value);
+  pitchReadout.textContent = (semis > 0 ? "+" : "") + semis + " ST";
+  speedReadout.textContent = spd.toFixed(2) + "×";
+  engine.setParams(semis, spd);
+
+  if (engine.originalBPM){
+    bpmCurEl.textContent = Math.round(engine.originalBPM * spd);
+    bpmOrigEl.textContent = engine.originalBPM;
+  } else {
+    bpmCurEl.textContent = "--";
+    bpmOrigEl.textContent = "--";
+  }
+  if (engine.originalKeyRoot !== null && engine.originalKeyRoot !== undefined){
+    const curRoot = ((engine.originalKeyRoot + semis) % 12 + 12) % 12;
+    const suffix = engine.originalKeyMinor ? "m" : "";
+    keyCurEl.textContent = NOTE_NAMES[curRoot] + suffix;
+    keyOrigEl.textContent = NOTE_NAMES[engine.originalKeyRoot] + suffix;
+  } else {
+    keyCurEl.textContent = "--";
+    keyOrigEl.textContent = "--";
+  }
+}
+pitchSlider.addEventListener("input", updateReadouts);
+speedSlider.addEventListener("input", updateReadouts);
+pitchReset.addEventListener("click", () => { pitchSlider.value = 0; updateReadouts(); });
+speedReset.addEventListener("click", () => { speedSlider.value = 1; updateReadouts(); });
+updateReadouts();
+
+dropZone.addEventListener("click", (e) => { if (e.target !== fileInput) fileInput.click(); });
+["dragover","dragenter"].forEach(ev => dropZone.addEventListener(ev, (e) => {
+  e.preventDefault(); dropZone.classList.add("drag");
+}));
+["dragleave","drop"].forEach(ev => dropZone.addEventListener(ev, (e) => {
+  e.preventDefault(); dropZone.classList.remove("drag");
+}));
+dropZone.addEventListener("drop", (e) => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+
+function handleFile(file){
+  fnameEl.textContent = file.name;
+  dropHint.textContent = "جارٍ تحميل وفك ترميز الملف…";
+  setStatus("جارٍ تحميل الملف…");
+  playBtn.disabled = true; exportBtn.disabled = true; stopBtn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const tmpCtx = new AudioCtxClass();
+    tmpCtx.decodeAudioData(e.target.result.slice(0), function(audioBuffer){
+      engine.load(audioBuffer);
+      originalDuration = audioBuffer.duration;
+      durTimeEl.textContent = fmtTime(originalDuration);
+      curTimeEl.textContent = "00:00";
+      seekFill.style.width = "0%";
+      seekCursor.style.right = "100%";
+      playBtn.disabled = false; exportBtn.disabled = false; stopBtn.disabled = false;
+      playBtn.textContent = "تشغيل";
+      dropHint.textContent = "اضغط هنا لاختيار ملف صوتي (MP3 / WAV) أو اسحبه وأفلته";
+      setStatus("جارٍ تحليل الإيقاع والمفتاح…");
+
+      const ch0 = audioBuffer.getChannelData(0);
+      const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : null;
+      const analysisLen = Math.min(ch0.length, audioBuffer.sampleRate * 90);
+      const mono = new Float32Array(analysisLen);
+      if (ch1){
+        for (let i = 0; i < analysisLen; i++) mono[i] = (ch0[i] + ch1[i]) * 0.5;
+      } else {
+        for (let i = 0; i < analysisLen; i++) mono[i] = ch0[i];
+      }
+      engine.originalBPM = detectBPM(mono, audioBuffer.sampleRate);
+      const key = detectKey(mono, audioBuffer.sampleRate);
+      engine.originalKeyRoot = key ? key.root : null;
+      engine.originalKeyMinor = key ? key.minor : false;
+      updateReadouts();
+
+      setStatus("تم تحميل الملف. جاهز للتشغيل — " + audioBuffer.numberOfChannels + " قناة، " + audioBuffer.sampleRate + " هرتز.");
+      tmpCtx.close();
+    }, function(err){
+      setStatus("تعذّر فك ترميز هذا الملف الصوتي.", true);
+      dropHint.textContent = "اضغط هنا لاختيار ملف صوتي (MP3 / WAV) أو اسحبه وأفلته";
+      tmpCtx.close();
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function startUiLoop(){
+  if (uiRafHandle) return;
+  function tick(){
+    if (engine.isPlaying){
+      const frac = engine.currentFraction();
+      seekFill.style.width = (frac * 100) + "%";
+      seekCursor.style.right = (100 - frac * 100) + "%";
+      curTimeEl.textContent = fmtTime(frac * originalDuration);
+      uiRafHandle = requestAnimationFrame(tick);
+    } else {
+      uiRafHandle = null;
+    }
+  }
+  uiRafHandle = requestAnimationFrame(tick);
+}
+
+playBtn.addEventListener("click", () => {
+  if (engine.isPlaying){
+    engine.pause();
+    playBtn.textContent = "تشغيل";
+  } else {
+    engine.onEnded = function(){
+      playBtn.textContent = "تشغيل";
+      engine.seekTo(0);
+      seekFill.style.width = "0%";
+      seekCursor.style.right = "100%";
+      curTimeEl.textContent = "00:00";
+    };
+    engine.play();
+    playBtn.textContent = "إيقاف مؤقت";
+    startUiLoop();
+  }
+});
+
+stopBtn.addEventListener("click", () => {
+  engine.pause();
+  engine.stop();
+  playBtn.textContent = "تشغيل";
+  seekFill.style.width = "0%";
+  seekCursor.style.right = "100%";
+  curTimeEl.textContent = "00:00";
+});
+
+seek.addEventListener("click", (e) => {
+  if (!engine.audioBuffer) return;
+  const rect = seek.getBoundingClientRect();
+  const xFromRight = rect.right - e.clientX;
+  let frac = 1 - (xFromRight / rect.width);
+  frac = Math.max(0, Math.min(1, frac));
+  engine.seekTo(frac);
+  seekFill.style.width = (frac * 100) + "%";
+  seekCursor.style.right = (100 - frac * 100) + "%";
+  curTimeEl.textContent = fmtTime(frac * originalDuration);
+});
+
+exportBtn.addEventListener("click", async () => {
+  if (!engine.audioBuffer) return;
+  exportBtn.disabled = true;
+  progWrap.classList.add("on");
+  progBar.style.width = "0%";
+  setStatus("جارٍ معالجة الصوت للتصدير…");
+  const wasPlaying = engine.isPlaying;
+  engine.pause();
+
+  const result = await engine.exportWav((p) => {
+    progBar.style.width = (p * 100) + "%";
+  });
+
+  const blob = encodeWav(result.channels, result.sampleRate);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const semis = pitchSlider.value;
+  const spd = speedSlider.value;
+  a.download = "audio-pitch" + semis + "-speed" + spd + ".wav";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  progWrap.classList.remove("on");
+  exportBtn.disabled = false;
+  setStatus("تم تصدير الملف بنجاح.");
+  if (wasPlaying) { engine.play(); playBtn.textContent = "إيقاف مؤقت"; startUiLoop(); }
+});
+
+})();
+</script>
+</body>
+</html>

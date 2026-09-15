@@ -17,36 +17,6 @@ class PcmAudioBuffer {
 
   Float32List getChannelData(int channel) => channelData[channel];
 
-  Float32List toInterleaved() {
-    final interleaved = Float32List(length * channels);
-    for (var frame = 0; frame < length; frame++) {
-      for (var channel = 0; channel < channels; channel++) {
-        interleaved[frame * channels + channel] = channelData[channel][frame];
-      }
-    }
-    return interleaved;
-  }
-
-  factory PcmAudioBuffer.fromInterleaved(
-    Float32List data,
-    int channels,
-    int sampleRate,
-  ) {
-    final frameCount = data.length ~/ channels;
-    final channelData = List<Float32List>.generate(channels, (channel) {
-      final samples = Float32List(frameCount);
-      for (var frame = 0; frame < frameCount; frame++) {
-        samples[frame] = data[frame * channels + channel];
-      }
-      return samples;
-    });
-    return PcmAudioBuffer(
-      channels: channels,
-      sampleRate: sampleRate,
-      channelData: channelData,
-    );
-  }
-
   PcmAudioBuffer slice(int startSample, int endSample) {
     final clampedEnd = endSample.clamp(0, length);
     final clampedStart = startSample.clamp(0, clampedEnd);

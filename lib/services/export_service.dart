@@ -8,7 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/audio_segment.dart';
 import '../models/master_settings.dart';
 import '../models/pcm_audio_buffer.dart';
-import 'audio_processor.dart';
+import 'soundtouch_processor.dart';
 import 'wav_encoder.dart';
 
 class ExportService {
@@ -17,11 +17,10 @@ class ExportService {
     String baseName,
     MasterSettings masterSettings,
   ) async {
-    final processed = AudioProcessor.getProcessedBuffer(
+    final processed = SoundtouchProcessor.getProcessedBuffer(
       segment.buffer,
       masterSettings.speed,
       masterSettings.pitch,
-      preserveFormants: masterSettings.preserveFormants,
     );
     final wavBytes = WavEncoder.encode(processed);
     final tempDir = await getTemporaryDirectory();
@@ -44,11 +43,10 @@ class ExportService {
         'جاري معالجة المقطع ${i + 1} من ${segments.length}',
       );
       final seg = segments[i];
-      final processed = AudioProcessor.getProcessedBuffer(
+      final processed = SoundtouchProcessor.getProcessedBuffer(
         seg.buffer,
         masterSettings.speed,
         masterSettings.pitch,
-        preserveFormants: masterSettings.preserveFormants,
       );
       final wavBytes = WavEncoder.encode(processed);
       archive.addFile(

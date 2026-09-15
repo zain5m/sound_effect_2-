@@ -1,5 +1,3 @@
-import 'dart:isolate';
-
 import 'package:flutter/material.dart';
 import 'package:sound_effect_2/main.dart';
 import 'package:sound_effect_2/providers/ui_event_service.dart';
@@ -12,7 +10,7 @@ import '../services/audio_decode_service.dart';
 import '../services/export_service.dart';
 import '../services/playback_service.dart';
 import '../services/silence_detector.dart';
-import '../services/audio_processor.dart';
+import '../services/soundtouch_processor.dart';
 
 enum PlaybackType { master, segment }
 
@@ -58,8 +56,7 @@ class AudioAppProvider extends ChangeNotifier {
   bool get hasPendingChanges {
     final hasChanges =
         editingSettings.speed != appliedSettings.speed ||
-        editingSettings.pitch != appliedSettings.pitch ||
-        editingSettings.preserveFormants != appliedSettings.preserveFormants;
+        editingSettings.pitch != appliedSettings.pitch;
     Dev.console([
       'hasPendingChanges',
       'speed: ${editingSettings.speed} vs ${appliedSettings.speed}',
@@ -98,12 +95,11 @@ class AudioAppProvider extends ChangeNotifier {
     notifyListeners();
 
     if (currentPlaybackType == PlaybackType.master) {
-      final processed = await Isolate.run(
-        () => AudioProcessor.getProcessedBuffer(
+      final processed = await Future(
+        () => SoundtouchProcessor.getProcessedBuffer(
           audioBuffer!,
           appliedSettings.speed,
           appliedSettings.pitch,
-          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
@@ -113,12 +109,11 @@ class AudioAppProvider extends ChangeNotifier {
     } else {
       final seg = segments[currentSegmentIndex];
 
-      final processed = await Isolate.run(
-        () => AudioProcessor.getProcessedBuffer(
+      final processed = await Future(
+        () => SoundtouchProcessor.getProcessedBuffer(
           seg.buffer,
           appliedSettings.speed,
           appliedSettings.pitch,
-          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
@@ -189,12 +184,6 @@ class AudioAppProvider extends ChangeNotifier {
   void setPitch(int pitch) {
     Dev.console(['setPitch: $pitch']);
     editingSettings.pitch = pitch;
-    notifyListeners();
-  }
-
-  void setPreserveFormants(bool value) {
-    Dev.console(['setPreserveFormants: $value']);
-    editingSettings.preserveFormants = value;
     notifyListeners();
   }
 
@@ -374,12 +363,11 @@ class AudioAppProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final processed = await Isolate.run(
-        () => AudioProcessor.getProcessedBuffer(
+      final processed = await Future(
+        () => SoundtouchProcessor.getProcessedBuffer(
           audioBuffer!,
           appliedSettings.speed,
           appliedSettings.pitch,
-          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 
@@ -436,12 +424,11 @@ class AudioAppProvider extends ChangeNotifier {
       final seg = segments[idx];
       Dev.console(['playSegment: Processing segment ${seg.index}']);
 
-      final processed = await Isolate.run(
-        () => AudioProcessor.getProcessedBuffer(
+      final processed = await Future(
+        () => SoundtouchProcessor.getProcessedBuffer(
           seg.buffer,
           appliedSettings.speed,
           appliedSettings.pitch,
-          preserveFormants: appliedSettings.preserveFormants,
         ),
       );
 

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -16,9 +14,7 @@ class MasterEffectsPanel extends StatelessWidget {
     return PanelCard(
       icon: Icons.equalizer_rounded,
       title: 'التأثيرات الرئيسية',
-      subtitle: Platform.isAndroid
-          ? 'محرك Signalsmith عالي الجودة — بدون تشويش'
-          : 'تطبق على جميع المقاطع والتصدير',
+      subtitle: 'تطبق على جميع المقاطع والتصدير',
       backgroundColor: AppColors.secondaryLight,
       iconBackground: AppColors.chipPurple,
       onReset: () => provider.resetMasterSettings(),
@@ -51,22 +47,8 @@ class MasterEffectsPanel extends StatelessWidget {
                 min: -12,
                 max: 12,
                 divisions: 24,
-                displayValue: '$pitchSign$pitch نصف نغمة',
+                displayValue: '$pitchSign$pitch سنت',
                 onChanged: (v) => provider.setPitch(v.round()),
-              );
-            },
-          ),
-          Selector<AudioAppProvider, bool>(
-            selector: (context, provider) =>
-                provider.editingSettings.preserveFormants,
-            builder: (context, preserveFormants, _) {
-              return SwitchRow(
-                icon: Icons.record_voice_over_rounded,
-                label: 'الحفاظ على طابع الصوت (Formant)',
-                description:
-                    'يمنع تحول الصوت إلى نبرة صناعية عند تغيير النغمة.',
-                value: preserveFormants,
-                onChanged: provider.setPreserveFormants,
               );
             },
           ),
@@ -310,58 +292,6 @@ class SliderRow extends StatelessWidget {
             color: AppColors.secondaryDark,
           ),
         ),
-      ],
-    );
-  }
-}
-
-class SwitchRow extends StatelessWidget {
-  const SwitchRow({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.description,
-  });
-
-  final IconData icon;
-  final String label;
-  final String? description;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: AppColors.primaryDark),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.tajawal(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (description != null)
-                Text(
-                  description!,
-                  style: GoogleFonts.tajawal(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    height: 1.5,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Switch(value: value, onChanged: onChanged),
       ],
     );
   }
