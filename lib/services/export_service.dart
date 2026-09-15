@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -17,12 +18,11 @@ class ExportService {
     String baseName,
     MasterSettings masterSettings,
   ) async {
-    final processed = SoundtouchProcessor.getProcessedBuffer(
+    final wavBytes = await _renderWav(
       segment.buffer,
       masterSettings.speed,
       masterSettings.pitch,
     );
-    final wavBytes = WavEncoder.encode(processed);
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/${baseName}_part${segment.index}.wav');
     await file.writeAsBytes(wavBytes);
@@ -43,12 +43,11 @@ class ExportService {
         'جاري معالجة المقطع ${i + 1} من ${segments.length}',
       );
       final seg = segments[i];
-      final processed = SoundtouchProcessor.getProcessedBuffer(
+      final wavBytes = await _renderWav(
         seg.buffer,
         masterSettings.speed,
         masterSettings.pitch,
       );
-      final wavBytes = WavEncoder.encode(processed);
       archive.addFile(
         ArchiveFile(
           'samples/${baseName}_part${seg.index}.wav',
@@ -80,11 +79,24 @@ class ExportService {
     await Share.shareXFiles([XFile(file.path)]);
   }
 
-  Future<File> bufferToTempWav(PcmAudioBuffer buffer, String name) async {
-    final wavBytes = WavEncoder.encode(buffer);
+  Future<File> bufferToTempWav(
+    PcmAudioBuffer buffer,
+    String name, {
+    double speed = 1,
+    int pitch = 0,
+  }) async {
+    final wavBytes = await _renderWav(buffer, speed, pitch);
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/$name.wav');
     await file.writeAsBytes(wavBytes);
     return file;
   }
+}
+
+Future<Uint8List> _renderWav(PcmAudioBuffer buffer, double speed, int pitch) {
+  return Isolate.run(
+    () => WavEncoder.encode(
+      SoundtouchProcessor.getProcessedBuffer(buffer, speed, pitch),
+    ),
+  );
 }

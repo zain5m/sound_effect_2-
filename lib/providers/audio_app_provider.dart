@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sound_effect_2/main.dart';
 import 'package:sound_effect_2/providers/ui_event_service.dart';
@@ -10,7 +12,6 @@ import '../services/audio_decode_service.dart';
 import '../services/export_service.dart';
 import '../services/playback_service.dart';
 import '../services/silence_detector.dart';
-import '../services/soundtouch_processor.dart';
 
 enum PlaybackType { master, segment }
 
@@ -45,11 +46,15 @@ class AudioAppProvider extends ChangeNotifier {
   bool isPlayingAll = false;
 
   double? draggingProgress;
+  int _playbackRequest = 0;
+  bool _preparingPlayback = false;
 
   AudioAppProvider() {
     Dev.console(['AudioAppProvider: Constructor initialized']);
     playback.onStateChanged = notifyListeners;
     playback.onComplete = _onPlaybackComplete;
+    playback.onError = (error) =>
+        _showToast('خطأ في تشغيل الصوت: $error', true);
     Dev.console(['AudioAppProvider: Playback callbacks registered']);
   }
 
@@ -67,86 +72,26 @@ class AudioAppProvider extends ChangeNotifier {
   }
 
   Future<void> applyEffects() async {
-    Dev.console(['applyEffects: Started']);
-
-    if (!playback.hasLoadedFile) {
-      appliedSettings = editingSettings.copyWith();
-      notifyListeners();
-      return;
-    }
-
-    final wasPlaying = playback.isPlaying;
-
-    if (wasPlaying) {
-      await playback.pause();
-    }
-
-    final oldSpeed = appliedSettings.speed;
-
-    final displayPosition = Duration(
-      milliseconds: (playback.position.inMilliseconds * oldSpeed).round(),
-    );
-
-    Dev.console(['Old speed: $oldSpeed', 'Display position: $displayPosition']);
-
     appliedSettings = editingSettings.copyWith();
-    isLoading = true;
-    progressMessage = 'جاري تطبيق التأثيرات...';
     notifyListeners();
-
-    if (currentPlaybackType == PlaybackType.master) {
-      final processed = await Future(
-        () => SoundtouchProcessor.getProcessedBuffer(
-          audioBuffer!,
-          appliedSettings.speed,
-          appliedSettings.pitch,
-        ),
+    try {
+      await playback.setParameters(
+        appliedSettings.speed,
+        appliedSettings.pitch,
       );
-
-      final file = await _exportService.bufferToTempWav(processed, 'master');
-
-      await playback.loadFile(file);
-    } else {
-      final seg = segments[currentSegmentIndex];
-
-      final processed = await Future(
-        () => SoundtouchProcessor.getProcessedBuffer(
-          seg.buffer,
-          appliedSettings.speed,
-          appliedSettings.pitch,
-        ),
-      );
-
-      final file = await _exportService.bufferToTempWav(
-        processed,
-        'seg_${seg.index}',
-      );
-
-      await playback.loadFile(file);
+    } catch (error) {
+      _showToast('خطأ في تطبيق التأثيرات: $error', true);
     }
-
-    final newPlayerPosition = Duration(
-      milliseconds: (displayPosition.inMilliseconds / appliedSettings.speed)
-          .round(),
-    );
-
-    isLoading = false;
-    progressMessage = '';
-    notifyListeners();
-
-    await playback.seek(newPlayerPosition);
-
-    if (wasPlaying) {
-      await playback.play();
-    }
-
-    notifyListeners();
   }
 
   void resetMasterSettings() {
     Dev.console(['resetMasterSettings: Resetting to defaults']);
     editingSettings = MasterSettings();
-    notifyListeners();
+    if (playback.supportsRealtime) {
+      unawaited(applyEffects());
+    } else {
+      notifyListeners();
+    }
     Dev.console(['resetMasterSettings: Done']);
   }
 
@@ -178,13 +123,21 @@ class AudioAppProvider extends ChangeNotifier {
   void setSpeed(double speed) {
     Dev.console(['setSpeed: $speed']);
     editingSettings.speed = speed;
-    notifyListeners();
+    if (playback.supportsRealtime) {
+      unawaited(applyEffects());
+    } else {
+      notifyListeners();
+    }
   }
 
   void setPitch(int pitch) {
     Dev.console(['setPitch: $pitch']);
     editingSettings.pitch = pitch;
-    notifyListeners();
+    if (playback.supportsRealtime) {
+      unawaited(applyEffects());
+    } else {
+      notifyListeners();
+    }
   }
 
   void setThreshold(double value) {
@@ -349,57 +302,40 @@ class AudioAppProvider extends ChangeNotifier {
 
   // ====================== PLAYBACK ======================
   Future<void> playMaster({Duration? seekAfterPlay}) async {
-    Dev.console(['playMaster: Started', 'seekAfterPlay: $seekAfterPlay']);
-
-    if (audioBuffer == null) {
-      Dev.console(['playMaster: No audio buffer']);
-      return;
-    }
-
-    await stopPlayback();
-
-    isLoading = true;
-    progressMessage = 'جاري تطبيق التأثيرات...';
-    notifyListeners();
-
+    final buffer = audioBuffer;
+    if (buffer == null) return;
+    final request = ++_playbackRequest;
+    isPlayingAll = false;
     try {
-      final processed = await Future(
-        () => SoundtouchProcessor.getProcessedBuffer(
-          audioBuffer!,
-          appliedSettings.speed,
-          appliedSettings.pitch,
-        ),
-      );
-
-      final file = await _exportService.bufferToTempWav(processed, 'master');
-
+      await playback.stop();
+      if (request != _playbackRequest) return;
+      isLoading = true;
+      _preparingPlayback = true;
+      progressMessage = 'جاري تحميل الصوت...';
       currentPlaybackType = PlaybackType.master;
       currentSegmentIndex = -1;
       playerSegmentName = 'الملف الكامل';
-      //
-      isLoading = false;
-      progressMessage = '';
       notifyListeners();
-
-      Dev.console([
-        'playMaster: Playing',
-        'speed: ${appliedSettings.speed}',
-        'pitch: ${appliedSettings.pitch}',
-        'temp file: ${file.path}',
-      ]);
-
-      await playback.playFile(file);
-      if (seekAfterPlay != null) {
-        await playback.seek(seekAfterPlay);
+      await playback.loadBuffer(
+        buffer,
+        speed: appliedSettings.speed,
+        pitch: appliedSettings.pitch,
+      );
+      if (request != _playbackRequest) return;
+      if (seekAfterPlay != null) await playback.seek(seekAfterPlay);
+      if (request != _playbackRequest) return;
+      await playback.play();
+    } catch (error) {
+      if (request == _playbackRequest) {
+        _showToast('خطأ في تشغيل الصوت: $error', true);
       }
-    } catch (e, stack) {
-      Dev.console(['playMaster: ERROR', e.toString(), stack.toString()]);
-      _showToast('❌ خطأ في المعالجة: $e', true);
     } finally {
-      isLoading = false;
-      progressMessage = '';
-      notifyListeners();
-      Dev.console(['playMaster: Finished']);
+      if (request == _playbackRequest) {
+        _preparingPlayback = false;
+        isLoading = false;
+        progressMessage = '';
+        notifyListeners();
+      }
     }
   }
 
@@ -408,48 +344,38 @@ class AudioAppProvider extends ChangeNotifier {
     bool continueAll = false,
     Duration? seekAfterPlay,
   }) async {
-    Dev.console(['playSegment: idx=$idx, continueAll=$continueAll']);
-
-    if (idx < 0 || idx >= segments.length) {
-      Dev.console(['playSegment: Invalid index']);
-      return;
-    }
-
-    if (!continueAll) {
-      await stopPlayback();
-      isPlayingAll = false;
-    }
-
+    if (idx < 0 || idx >= segments.length) return;
+    final request = ++_playbackRequest;
+    final segment = segments[idx];
+    if (!continueAll) isPlayingAll = false;
     try {
-      final seg = segments[idx];
-      Dev.console(['playSegment: Processing segment ${seg.index}']);
-
-      final processed = await Future(
-        () => SoundtouchProcessor.getProcessedBuffer(
-          seg.buffer,
-          appliedSettings.speed,
-          appliedSettings.pitch,
-        ),
-      );
-
-      final file = await _exportService.bufferToTempWav(
-        processed,
-        'seg_${seg.index}',
-      );
-
+      await playback.stop();
+      if (request != _playbackRequest) return;
       currentPlaybackType = PlaybackType.segment;
       currentSegmentIndex = idx;
-      playerSegmentName = 'المقطع ${seg.index}';
-
-      await playback.playFile(file);
-      if (seekAfterPlay != null) {
-        await playback.seek(seekAfterPlay);
+      playerSegmentName = 'المقطع ${segment.index}';
+      notifyListeners();
+      await playback.loadBuffer(
+        segment.buffer,
+        speed: appliedSettings.speed,
+        pitch: appliedSettings.pitch,
+      );
+      if (request != _playbackRequest) return;
+      if (seekAfterPlay != null) await playback.seek(seekAfterPlay);
+      if (request != _playbackRequest) return;
+      await playback.play();
+    } catch (error) {
+      if (request == _playbackRequest) {
+        isPlayingAll = false;
+        _showToast('خطأ في تشغيل المقطع: $error', true);
       }
-
-      Dev.console(['playSegment: Playing segment ${seg.index}']);
-    } catch (e, stack) {
-      Dev.console(['playSegment: ERROR', e.toString(), stack.toString()]);
-      _showToast('❌ خطأ في تشغيل المقطع', true);
+    } finally {
+      if (request == _playbackRequest) {
+        _preparingPlayback = false;
+        isLoading = false;
+        progressMessage = '';
+        notifyListeners();
+      }
     }
   }
 
@@ -471,7 +397,7 @@ class AudioAppProvider extends ChangeNotifier {
     Dev.console(['togglePlayback: Called', 'isPlaying: ${playback.isPlaying}']);
     if (playback.isPlaying) {
       await playback.pause();
-    } else if (playback.position > Duration.zero) {
+    } else if (playback.hasLoadedFile) {
       await playback.resume();
     } else if (currentSegmentIndex >= 0) {
       await playSegment(currentSegmentIndex);
@@ -496,6 +422,12 @@ class AudioAppProvider extends ChangeNotifier {
   }
 
   Future<void> stopPlayback() async {
+    ++_playbackRequest;
+    if (_preparingPlayback) {
+      _preparingPlayback = false;
+      isLoading = false;
+      progressMessage = '';
+    }
     Dev.console(['stopPlayback: Called']);
     isPlayingAll = false;
     await playback.stop();
@@ -605,11 +537,7 @@ class AudioAppProvider extends ChangeNotifier {
       milliseconds: (duration.inMilliseconds * value).round(),
     );
 
-    final playerPosition = Duration(
-      milliseconds: (position.inMilliseconds / appliedSettings.speed).round(),
-    );
-
-    await playback.seek(playerPosition);
+    await playback.seek(position);
     // await playback.seek(position);
     notifyListeners();
   }
@@ -662,14 +590,12 @@ class AudioAppProvider extends ChangeNotifier {
   //   return Duration(milliseconds: milliseconds.round());
   // }
   Duration get displayPosition {
-    return Duration(
-      milliseconds: (playback.position.inMilliseconds * appliedSettings.speed)
-          .round(),
-    );
+    return playback.position;
   }
 
   @override
   void dispose() {
+    ++_playbackRequest;
     Dev.console(['AudioAppProvider: Disposing...']);
     playback.dispose();
     super.dispose();

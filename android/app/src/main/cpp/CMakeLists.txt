@@ -11,6 +11,7 @@ target_compile_features(stretch PRIVATE cxx_std_17)
 
 # Avoid -ffast-math: it can introduce audible artifacts in DSP pipelines.
 target_compile_options(stretch PRIVATE
+    $<$<CONFIG:Debug>:-O2>
     $<$<CONFIG:Release>:-O3>
     $<$<CONFIG:RelWithDebInfo>:-O3>
 )
