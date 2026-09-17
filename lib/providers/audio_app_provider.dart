@@ -446,13 +446,13 @@ class AudioAppProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final file = await _exportService.exportSegmentWav(
+      final file = await _exportService.exportSegmentMp3(
         seg,
         fileName,
         appliedSettings,
       );
-      await _exportService.shareFile(file);
-      _showToast('💾 تم تحميل المقطع ${seg.index}', false);
+      await _exportService.saveFileToMusic(file);
+      _showToast('✅ تم حفظ المقطع ${seg.index} في Music/SoundEffect', false);
     } catch (e, stack) {
       Dev.console(['downloadSegment: ERROR', e.toString(), stack.toString()]);
       _showToast('❌ خطأ في تصدير المقطع', true);
@@ -486,8 +486,11 @@ class AudioAppProvider extends ChangeNotifier {
           Dev.console(['downloadAll: Progress $progress - $message']);
         },
       );
-      await _exportService.shareFile(zipFile);
-      _showToast('✅ تم تحميل ${segments.length} مقطع في ملف ZIP', false);
+      await _exportService.saveFileToMusic(zipFile);
+      _showToast(
+        '✅ تم حفظ ${segments.length} مقطع في Music/SoundEffect',
+        false,
+      );
     } catch (e, stack) {
       Dev.console(['downloadAll: ERROR', e.toString(), stack.toString()]);
       _showToast('❌ خطأ في إنشاء ZIP: $e', true);

@@ -55,11 +55,11 @@ class MasterEffectsPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              GradientButton(
-                label: 'تطبيق التأثيرات',
-                colors: const [AppColors.secondary, AppColors.secondaryDark],
-                onPressed: provider.applyEffects,
-              ),
+              // GradientButton(
+              //   label: 'تطبيق التأثيرات',
+              //   colors: const [AppColors.secondary, AppColors.secondaryDark],
+              //   onPressed: provider.applyEffects,
+              // ),
               GradientButton(
                 label: 'تشغيل الملف كاملاً',
                 colors: const [AppColors.primary, AppColors.primaryDark],
