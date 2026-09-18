@@ -144,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const WaveformSection(),
                         const SizedBox(height: 20),
                         const SegmentsSection(),
+                        SizedBox(height: 50),
                       ],
                     ),
                   ),

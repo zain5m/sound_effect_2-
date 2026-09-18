@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:external_path/external_path.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
@@ -62,73 +61,113 @@ class ExportService {
     return await _wavToMp3(wavFile);
   }
 
-  Future<File> exportAllZip(
+  // Future<File> exportAllZip(
+  //   List<AudioSegment> segments,
+  //   String baseName,
+  //   MasterSettings masterSettings,
+  //   void Function(double progress, String message)? onProgress,
+  // ) async {
+  //   final archive = Archive();
+  //   final tempDir = await getTemporaryDirectory();
+
+  //   for (var i = 0; i < segments.length; i++) {
+  //     onProgress?.call(
+  //       (i + 0.5) / segments.length * 0.5,
+  //       'جاري معالجة المقطع ${i + 1} من ${segments.length}',
+  //     );
+
+  //     final seg = segments[i];
+
+  //     final wavBytes = await _renderWav(
+  //       seg.buffer,
+  //       masterSettings.speed,
+  //       masterSettings.pitch,
+  //     );
+
+  //     final tempWavFile = File(
+  //       '${tempDir.path}/temp_${seg.index}_${DateTime.now().millisecondsSinceEpoch}.wav',
+  //     );
+
+  //     await tempWavFile.writeAsBytes(wavBytes);
+
+  //     final mp3File = await _wavToMp3(tempWavFile);
+  //     final mp3Bytes = await mp3File.readAsBytes();
+
+  //     archive.addFile(
+  //       ArchiveFile(
+  //         'samples/${baseName}_part${seg.index}.mp3',
+  //         mp3Bytes.length,
+  //         mp3Bytes,
+  //       ),
+  //     );
+
+  //     try {
+  //       await mp3File.delete();
+  //     } catch (_) {}
+
+  //     onProgress?.call(
+  //       (i + 1) / segments.length * 0.5,
+  //       'جاري معالجة المقطع ${i + 1} من ${segments.length}',
+  //     );
+  //   }
+
+  //   onProgress?.call(0.75, 'جاري إنشاء ملف ZIP...');
+
+  //   final zipEncoder = ZipEncoder();
+  //   final zipBytes = zipEncoder.encode(archive);
+
+  //   if (zipBytes == null) {
+  //     throw Exception('فشل إنشاء ZIP');
+  //   }
+
+  //   // استخدمنا tempDir الموجود من بداية الدالة
+  //   final zipFile = File('${tempDir.path}/${baseName}_all_segments.zip');
+
+  //   await zipFile.writeAsBytes(zipBytes);
+
+  //   onProgress?.call(1.0, 'تم');
+
+  //   return zipFile;
+  // }
+  Future<List<String>> exportAndSaveAllMp3(
     List<AudioSegment> segments,
     String baseName,
     MasterSettings masterSettings,
     void Function(double progress, String message)? onProgress,
   ) async {
-    final archive = Archive();
-    final tempDir = await getTemporaryDirectory();
+    final savedPaths = <String>[];
 
     for (var i = 0; i < segments.length; i++) {
+      final segment = segments[i];
+
       onProgress?.call(
-        (i + 0.5) / segments.length * 0.5,
+        i / segments.length,
         'جاري معالجة المقطع ${i + 1} من ${segments.length}',
       );
 
-      final seg = segments[i];
-
-      final wavBytes = await _renderWav(
-        seg.buffer,
-        masterSettings.speed,
-        masterSettings.pitch,
+      final tempFile = await exportSegmentMp3(
+        segment,
+        baseName,
+        masterSettings,
       );
 
-      final tempWavFile = File(
-        '${tempDir.path}/temp_${seg.index}_${DateTime.now().millisecondsSinceEpoch}.wav',
-      );
+      final savedPath = await saveFileToMusic(tempFile);
 
-      await tempWavFile.writeAsBytes(wavBytes);
-
-      final mp3File = await _wavToMp3(tempWavFile);
-      final mp3Bytes = await mp3File.readAsBytes();
-
-      archive.addFile(
-        ArchiveFile(
-          'samples/${baseName}_part${seg.index}.mp3',
-          mp3Bytes.length,
-          mp3Bytes,
-        ),
-      );
+      savedPaths.add(savedPath);
 
       try {
-        await mp3File.delete();
+        await tempFile.delete();
       } catch (_) {}
 
       onProgress?.call(
-        (i + 1) / segments.length * 0.5,
-        'جاري معالجة المقطع ${i + 1} من ${segments.length}',
+        (i + 1) / segments.length,
+        'تم حفظ المقطع ${i + 1} من ${segments.length}',
       );
     }
 
-    onProgress?.call(0.75, 'جاري إنشاء ملف ZIP...');
+    onProgress?.call(1.0, 'تم حفظ جميع المقاطع');
 
-    final zipEncoder = ZipEncoder();
-    final zipBytes = zipEncoder.encode(archive);
-
-    if (zipBytes == null) {
-      throw Exception('فشل إنشاء ZIP');
-    }
-
-    // استخدمنا tempDir الموجود من بداية الدالة
-    final zipFile = File('${tempDir.path}/${baseName}_all_segments.zip');
-
-    await zipFile.writeAsBytes(zipBytes);
-
-    onProgress?.call(1.0, 'تم');
-
-    return zipFile;
+    return savedPaths;
   }
 
   Future<String> saveFileToMusic(File tempFile) async {

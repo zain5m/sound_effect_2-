@@ -21,9 +21,7 @@ class PlayerBottomBar extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.97),
           elevation: 0,
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              boxShadow: AppDecorations.topShadow,
-            ),
+            decoration: BoxDecoration(boxShadow: AppDecorations.topShadow),
             child: SafeArea(
               top: false,
               child: Column(
@@ -82,8 +80,9 @@ class PlayerBottomBar extends StatelessWidget {
                               color: AppColors.playButton,
                               shape: const CircleBorder(),
                               elevation: 4,
-                              shadowColor:
-                                  AppColors.playButton.withValues(alpha: 0.4),
+                              shadowColor: AppColors.playButton.withValues(
+                                alpha: 0.4,
+                              ),
                               child: InkWell(
                                 onTap: provider.togglePlayback,
                                 customBorder: const CircleBorder(),

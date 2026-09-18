@@ -475,7 +475,19 @@ class AudioAppProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final zipFile = await _exportService.exportAllZip(
+      // final zipFile = await _exportService.exportAllZip(
+      //   segments,
+      //   fileName,
+      //   appliedSettings,
+      //   (progress, message) {
+      //     progressValue = progress;
+      //     progressMessage = message;
+      //     notifyListeners();
+      //     Dev.console(['downloadAll: Progress $progress - $message']);
+      //   },
+      // );
+      // await _exportService.saveFileToMusic(zipFile);
+      await _exportService.exportAndSaveAllMp3(
         segments,
         fileName,
         appliedSettings,
@@ -486,7 +498,6 @@ class AudioAppProvider extends ChangeNotifier {
           Dev.console(['downloadAll: Progress $progress - $message']);
         },
       );
-      await _exportService.saveFileToMusic(zipFile);
       _showToast(
         '✅ تم حفظ ${segments.length} مقطع في Music/SoundEffect',
         false,
