@@ -6,14 +6,19 @@ class AdManager {
   static final AdManager instance = AdManager._();
 
   bool _initialized = false;
+  Future<void>? _initialization;
 
   bool get isInitialized => _initialized;
 
-  Future<void> initialize() async {
-    if (_initialized) return;
+  Future<void> initialize() => _initialization ??= _initialize();
 
-    await MobileAds.instance.initialize();
-
-    _initialized = true;
+  Future<void> _initialize() async {
+    try {
+      await MobileAds.instance.initialize();
+      _initialized = true;
+    } catch (_) {
+      _initialization = null;
+      rethrow;
+    }
   }
 }

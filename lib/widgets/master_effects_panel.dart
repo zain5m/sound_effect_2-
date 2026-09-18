@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -19,20 +20,55 @@ class MasterEffectsPanel extends StatelessWidget {
       iconBackground: AppColors.chipPurple,
       onReset: () => provider.resetMasterSettings(),
       child: Column(
-        spacing: 20,
+        spacing: 20.h,
         children: [
-          Selector<AudioAppProvider, double>(
-            selector: (context, provider) => provider.editingSettings.speed,
-            builder: (context, speed, _) {
-              return SliderRow(
-                icon: Icons.speed,
-                label: 'سرعة التشغيل (Time-Stretch)',
-                value: speed,
-                min: 0.5,
-                max: 2.0,
-                divisions: 150,
-                displayValue: '${speed.toStringAsFixed(2)}x',
-                onChanged: provider.setSpeed,
+          Selector<
+            AudioAppProvider,
+            ({double speed, int? originalBpm, int? currentBpm})
+          >(
+            selector: (context, provider) => (
+              speed: provider.editingSettings.speed,
+              originalBpm: provider.originalBpm,
+              currentBpm: provider.currentBpm,
+            ),
+            builder: (context, values, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 8.h,
+                children: [
+                  SliderRow(
+                    icon: Icons.speed,
+                    label: 'سرعة التشغيل (Time-Stretch)',
+                    value: values.speed,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 150,
+                    displayValue: '${values.speed.toStringAsFixed(2)}x',
+                    onChanged: provider.setSpeed,
+                  ),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        'الإيقاع الأصلي: ${values.originalBpm ?? '--'} BPM',
+                        style: GoogleFonts.tajawal(
+                          fontSize: 11.sp,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        'الإيقاع الحالي: ${values.currentBpm ?? '--'} BPM',
+                        style: GoogleFonts.tajawal(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.secondaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               );
             },
           ),
@@ -88,7 +124,7 @@ class SplitSettingsPanel extends StatelessWidget {
       iconBackground: AppColors.chipBlue,
       onReset: () => provider.resetSplitSettings(),
       child: Column(
-        spacing: 20,
+        spacing: 20.h,
         children: [
           Selector<AudioAppProvider, double>(
             selector: (context, provider) => provider.splitSettings.threshold,
@@ -164,8 +200,8 @@ class PanelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      padding: const EdgeInsets.all(22),
+      margin: REdgeInsets.symmetric(vertical: 10),
+      padding: REdgeInsets.all(22),
       decoration: AppDecorations.pastelPanel(backgroundColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,15 +210,15 @@ class PanelCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 40.r,
+                height: 40.r,
                 decoration: BoxDecoration(
                   color: iconBackground,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: AppColors.primaryDark, size: 28),
               ),
-              const SizedBox(width: 14),
+              RSizedBox(width: 4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +226,7 @@ class PanelCard extends StatelessWidget {
                     Text(
                       title,
                       style: GoogleFonts.tajawal(
-                        fontSize: 16,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -201,7 +237,7 @@ class PanelCard extends StatelessWidget {
                         child: Text(
                           subtitle!,
                           style: GoogleFonts.tajawal(
-                            fontSize: 12,
+                            fontSize: 10.sp,
                             color: AppColors.textSecondary,
                             height: 1.5,
                           ),
@@ -269,7 +305,7 @@ class SliderRow extends StatelessWidget {
                 label,
                 style: GoogleFonts.tajawal(
                   color: AppColors.textSecondary,
-                  fontSize: 13,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -287,7 +323,7 @@ class SliderRow extends StatelessWidget {
           displayValue,
           textAlign: TextAlign.center,
           style: GoogleFonts.tajawal(
-            fontSize: 16,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w700,
             color: AppColors.secondaryDark,
           ),
@@ -329,7 +365,7 @@ class GradientButton extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(AppRadii.pill),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: REdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Text(
               label,
               style: GoogleFonts.tajawal(

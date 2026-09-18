@@ -9,6 +9,7 @@ import '../models/master_settings.dart';
 import '../models/pcm_audio_buffer.dart';
 import '../models/split_settings.dart';
 import '../services/audio_decode_service.dart';
+import '../services/bpm_detector.dart';
 import '../services/export_service.dart';
 import '../services/playback_service.dart';
 import '../services/silence_detector.dart';
@@ -17,6 +18,7 @@ enum PlaybackType { master, segment }
 
 class AudioAppProvider extends ChangeNotifier {
   final AudioDecodeService _decodeService = AudioDecodeService();
+  final BpmDetector _bpmDetector = BpmDetector();
   final SilenceDetector _silenceDetector = SilenceDetector();
   final ExportService _exportService = ExportService();
   final PlaybackService playback = PlaybackService();
@@ -24,6 +26,16 @@ class AudioAppProvider extends ChangeNotifier {
   PlaybackType currentPlaybackType = PlaybackType.master;
 
   PcmAudioBuffer? audioBuffer;
+  int? _originalBpm;
+  int _bpmRequest = 0;
+  bool _disposed = false;
+
+  int? get originalBpm => _originalBpm;
+  int? get currentBpm {
+    final bpm = _originalBpm;
+    return bpm == null ? null : (bpm * editingSettings.speed).round();
+  }
+
   String fileName = '';
   String fileDisplayName = '';
   String fileFormat = '';
@@ -160,6 +172,8 @@ class AudioAppProvider extends ChangeNotifier {
 
   // ====================== LOAD FILE ======================
   Future<void> resetState() async {
+    ++_bpmRequest;
+    _originalBpm = null;
     await stopPlayback();
 
     currentPlaybackType = PlaybackType.master;
@@ -219,6 +233,8 @@ class AudioAppProvider extends ChangeNotifier {
       fileDisplayName = name;
       playerSegmentName = 'الملف الكامل';
       fileFormat = mimeType ?? 'audio';
+      _originalBpm = null;
+      unawaited(_detectOriginalBpm(buffer));
 
       Dev.console([
         'loadFile: Success',
@@ -242,6 +258,24 @@ class AudioAppProvider extends ChangeNotifier {
       notifyListeners();
       Dev.console(['loadFile: Finished']);
     }
+  }
+
+  Future<void> _detectOriginalBpm(PcmAudioBuffer buffer) async {
+    if (_disposed) return;
+    final request = ++_bpmRequest;
+    int? bpm;
+    try {
+      bpm = await _bpmDetector.detect(buffer);
+    } catch (error) {
+      Dev.console(['BPM detection failed', error.toString()]);
+    }
+    if (_disposed ||
+        request != _bpmRequest ||
+        !identical(audioBuffer, buffer)) {
+      return;
+    }
+    _originalBpm = bpm;
+    notifyListeners();
   }
 
   // ====================== ANALYZE & SPLIT ======================
@@ -609,6 +643,8 @@ class AudioAppProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    ++_bpmRequest;
     ++_playbackRequest;
     Dev.console(['AudioAppProvider: Disposing...']);
     playback.dispose();

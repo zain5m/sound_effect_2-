@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:sound_effect_2/ads/ads_provider.dart';
 import 'package:sound_effect_2/models/pcm_audio_buffer.dart';
 
 import '../providers/audio_app_provider.dart';
 import '../theme/app_theme.dart';
+import 'rewarded_download_dialog.dart';
 import 'waveform_painter.dart';
 
 class SegmentCard extends StatelessWidget {
@@ -26,7 +27,7 @@ class SegmentCard extends StatelessWidget {
       decoration: AppDecorations.pastelPanel(_cardColor).copyWith(
         border: Border(right: BorderSide(color: _accentColor, width: 4)),
       ),
-      padding: const EdgeInsets.all(18),
+      padding: REdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -34,8 +35,8 @@ class SegmentCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 30.r,
+                height: 30.r,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.7),
                   shape: BoxShape.circle,
@@ -60,10 +61,7 @@ class SegmentCard extends StatelessWidget {
                     provider.segments[index].duration,
                 builder: (context, segDuration, child) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: REdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -73,7 +71,7 @@ class SegmentCard extends StatelessWidget {
                       style: GoogleFonts.tajawal(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                        fontSize: 10.sp,
                       ),
                     ),
                   );
@@ -81,11 +79,11 @@ class SegmentCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          RSizedBox(height: 8),
           SizedBox(
-            height: 50,
+            height: 40.r,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10.r),
               child: Selector<AudioAppProvider, PcmAudioBuffer>(
                 selector: (context, provider) =>
                     provider.segments[index].buffer,
@@ -106,7 +104,7 @@ class SegmentCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          RSizedBox(height: 4),
           Selector<AudioAppProvider, ({double startTime, double endTime})>(
             selector: (context, provider) => (
               startTime: provider.segments[index].startTime,
@@ -118,12 +116,12 @@ class SegmentCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.tajawal(
                   color: AppColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 10.sp,
                 ),
               );
             },
           ),
-          const SizedBox(height: 12),
+          RSizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -135,29 +133,17 @@ class SegmentCard extends StatelessWidget {
                   onPressed: () => provider.playSegment(index),
                 ),
               ),
-              const SizedBox(width: 8),
+              RSizedBox(width: 8),
               Expanded(
                 child: _SegmentPillButton(
                   label: 'تحميل',
                   icon: Icons.download_rounded,
                   background: AppColors.accentLight,
                   foreground: AppColors.success,
-                  onPressed: () async {
-                    final shown = await context
-                        .read<AdsProvider>()
-                        .rewardedController
-                        .show(
-                          onRewarded: () {
-                            provider.downloadSegment(index);
-                          },
-                        );
-
-                    if (!shown) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('الإعلان غير جاهز بعد')),
-                      );
-                    }
-                  },
+                  onPressed: () => showRewardedDownloadDialog(
+                    context,
+                    onRewarded: () => provider.downloadSegment(index),
+                  ),
                 ),
               ),
             ],
@@ -191,17 +177,17 @@ class _SegmentPillButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(AppRadii.pill),
         child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: REdgeInsets.symmetric(vertical: 8),
           decoration: AppDecorations.pillButton(background),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 18, color: foreground),
-              const SizedBox(width: 4),
+              RSizedBox(width: 4),
               Text(
                 label,
                 style: GoogleFonts.tajawal(
-                  fontSize: 13,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
@@ -234,15 +220,12 @@ class SegmentsSection extends StatelessWidget {
                 Text(
                   'المقاطع المقطوعة',
                   style: GoogleFonts.tajawal(
-                    fontSize: 16,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
+                  padding: REdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: AppDecorations.pillButton(AppColors.accentLight),
                   child: Selector<AudioAppProvider, int>(
                     selector: (context, provider) => provider.segments.length,
@@ -252,7 +235,7 @@ class SegmentsSection extends StatelessWidget {
                         style: GoogleFonts.tajawal(
                           color: AppColors.success,
                           fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          fontSize: 11.sp,
                         ),
                       );
                     },
@@ -260,7 +243,7 @@ class SegmentsSection extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 15),
+            RSizedBox(height: 12),
             LayoutBuilder(
               builder: (context, constraints) {
                 final crossAxisCount = constraints.maxWidth > 600 ? 2 : 1;

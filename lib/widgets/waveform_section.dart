@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:sound_effect_2/ads/ads_provider.dart';
 import 'package:sound_effect_2/models/audio_segment.dart';
 import 'package:sound_effect_2/models/pcm_audio_buffer.dart';
 
 import '../providers/audio_app_provider.dart';
 import '../theme/app_theme.dart';
+import 'rewarded_download_dialog.dart';
 import 'waveform_painter.dart';
 
 class WaveformSection extends StatefulWidget {
@@ -35,27 +36,27 @@ class _WaveformSectionState extends State<WaveformSection> {
               return Text(
                 fileName,
                 style: GoogleFonts.tajawal(
-                  fontSize: 17,
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
                 ),
               );
             },
           ),
-          const SizedBox(height: 6),
+          RSizedBox(height: 6),
           Text(
             'الموجة الصوتية — الخطوط الحمراء = فترات الصمت',
             style: GoogleFonts.tajawal(
-              fontSize: 13,
+              fontSize: 10.sp,
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 16),
+          RSizedBox(height: 16),
           Container(
             key: _waveformKey,
-            height: 200,
+            height: 150.r,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: AppColors.border.withValues(alpha: 0.6),
               ),
@@ -110,9 +111,9 @@ class _WaveformSectionState extends State<WaveformSection> {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          RSizedBox(height: 12),
           const Legend(),
-          const SizedBox(height: 16),
+          RSizedBox(height: 16),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -132,24 +133,10 @@ class _WaveformSectionState extends State<WaveformSection> {
                           label: 'تحميل الكل (ZIP)',
                           background: AppColors.accentLight,
                           foreground: AppColors.success,
-                          onPressed: () async {
-                            final shown = await context
-                                .read<AdsProvider>()
-                                .rewardedController
-                                .show(
-                                  onRewarded: () {
-                                    provider.downloadAll();
-                                  },
-                                );
-
-                            if (!shown) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('الإعلان غير جاهز بعد'),
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: () => showRewardedDownloadDialog(
+                            context,
+                            onRewarded: provider.downloadAll,
+                          ),
                         )
                       : SizedBox.shrink();
                 },
@@ -219,16 +206,16 @@ class LegendChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 8.r,
+            height: 8.r,
             decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 6),
+          RSizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.tajawal(
               color: AppColors.textSecondary,
-              fontSize: 11,
+              fontSize: 8.sp,
             ),
           ),
         ],
@@ -259,7 +246,7 @@ class PillActionButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(AppRadii.pill),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+          padding: REdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: AppDecorations.pillButton(background),
           child: Text(
             label,

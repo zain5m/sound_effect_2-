@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:colorize/colorize.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
+import 'ads/ad_manager.dart';
 import 'ads/ads_provider.dart';
+import 'ads/app_open_ad_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/audio_app_provider.dart';
 import 'screens/home_screen.dart';
@@ -23,25 +29,68 @@ void main() async {
   runApp(const SoundEffectApp());
 }
 
-class SoundEffectApp extends StatelessWidget {
+class SoundEffectApp extends StatefulWidget {
   const SoundEffectApp({super.key});
+
+  @override
+  State<SoundEffectApp> createState() => _SoundEffectAppState();
+}
+
+class _SoundEffectAppState extends State<SoundEffectApp> {
+  final AppOpenAdManager _appOpenAdManager = AppOpenAdManager();
+  late final AppLifecycleReactor _appLifecycleReactor;
+
+  @override
+  void initState() {
+    super.initState();
+    _appLifecycleReactor = AppLifecycleReactor(
+      appOpenAdManager: _appOpenAdManager,
+    );
+    unawaited(_initializeAppOpenAds());
+  }
+
+  Future<void> _initializeAppOpenAds() async {
+    try {
+      await AdManager.instance.initialize();
+      if (!mounted) return;
+      unawaited(_appOpenAdManager.loadAd());
+      await _appLifecycleReactor.listenToAppStateChanges();
+    } catch (error) {
+      Dev.console(['App Open Ad initialization failed: $error']);
+    }
+  }
+
+  @override
+  void dispose() {
+    _appOpenAdManager.dispose();
+    unawaited(_appLifecycleReactor.dispose());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<AppOpenAdManager>.value(value: _appOpenAdManager),
         ChangeNotifierProvider(create: (_) => AudioAppProvider()),
 
         ChangeNotifierProvider(create: (_) => AdsProvider()),
       ],
-      child: MaterialApp(
-        title: 'مقسم المقاطع الصوتية الذكي',
-        debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        locale: const Locale('ar'),
-        supportedLocales: const [Locale('ar')],
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const InitializeScreen(),
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return MaterialApp(
+            title: 'مقسم المقاطع الصوتية الذكي',
+            debugShowCheckedModeBanner: false,
+            theme: buildAppTheme(),
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar')],
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const InitializeScreen(),
+          );
+        },
       ),
     );
   }
@@ -265,23 +314,24 @@ class Dev {
   }
 }
 
-// class AdRepository {
-//   static ConsentStatus? fullStatus;
-//   static AdRequest getAdRequest() {
-//     bool nonPersonalized = false;
-//
-//     if (fullStatus == ConsentStatus.obtained) {
-//       // وافق المستخدم = إعلان مخصص
-//       nonPersonalized = false;
-//       Dev.console(['User consented: show personalized ads']);
-//     } else {
-//       // رفض أو لم يوافق = إعلان غير مخصص
-//       nonPersonalized = true;
-//       Dev.console(['User did not consent: show non-personalized ads']);
-//     }
-//     return AdRequest(nonPersonalizedAds: nonPersonalized);
-//   }
-//
+class AdRepository {
+  static ConsentStatus? fullStatus;
+  static AdRequest getAdRequest() {
+    bool nonPersonalized = false;
+
+    if (fullStatus == ConsentStatus.obtained) {
+      // وافق المستخدم = إعلان مخصص
+      nonPersonalized = false;
+      Dev.console(['User consented: show personalized ads']);
+    } else {
+      // رفض أو لم يوافق = إعلان غير مخصص
+      nonPersonalized = true;
+      Dev.console(['User did not consent: show non-personalized ads']);
+    }
+    return AdRequest(nonPersonalizedAds: nonPersonalized);
+  }
+}
+
 //   static Future<InitializationStatus> initGoogleMobileAds() {
 //     Dev.console(['[initGoogleMobileAds] called']);
 //     return MobileAds.instance.initialize().then((status) {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/audio_app_provider.dart';
 import '../theme/app_theme.dart';
+import 'rewarded_download_dialog.dart';
 
 class ActionsSheet extends StatelessWidget {
   const ActionsSheet({super.key, this.onScrollToEffects, this.onScrollToSplit});
@@ -99,8 +100,12 @@ class ActionsSheet extends StatelessWidget {
             iconColor: AppColors.success,
             enabled: hasFile && provider.segments.isNotEmpty,
             onTap: () {
+              final downloadContext = Navigator.of(context).context;
               Navigator.pop(context);
-              provider.downloadAll();
+              showRewardedDownloadDialog(
+                downloadContext,
+                onRewarded: provider.downloadAll,
+              );
             },
           ),
         ],

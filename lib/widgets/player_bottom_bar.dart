@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -61,7 +62,7 @@ class PlayerBottomBar extends StatelessWidget {
                     },
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: REdgeInsets.fromLTRB(14, 0, 14, 10),
                     child: Row(
                       children: [
                         _PlaybackTime(),
@@ -71,7 +72,7 @@ class PlayerBottomBar extends StatelessWidget {
                           icon: const Icon(Icons.skip_next_rounded),
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 4),
+                        RSizedBox(width: 4),
                         Selector<AudioAppProvider, bool>(
                           selector: (context, provider) =>
                               provider.playback.isPlaying,
@@ -101,7 +102,7 @@ class PlayerBottomBar extends StatelessWidget {
                             );
                           },
                         ),
-                        const SizedBox(width: 4),
+                        RSizedBox(width: 4),
                         IconButton(
                           onPressed: provider.nextSegment,
                           icon: const Icon(Icons.skip_previous_rounded),
@@ -112,14 +113,14 @@ class PlayerBottomBar extends StatelessWidget {
                           selector: (context, provider) =>
                               provider.playerSegmentName,
                           builder: (context, value, child) {
-                            return SizedBox(
+                            return RSizedBox(
                               width: 80,
                               child: Text(
                                 value,
                                 textAlign: TextAlign.end,
                                 style: GoogleFonts.tajawal(
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 12,
+                                  fontSize: 10.sp,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -152,14 +153,14 @@ class _PlaybackTime extends StatelessWidget {
             ? value.duration.inSeconds
             : 1;
 
-        return SizedBox(
+        return RSizedBox(
           width: 90,
           child: Text(
             '${formatTime(value.position.inSeconds.toDouble())} / '
             '${formatTime(durSafe.toDouble())}',
             style: GoogleFonts.tajawal(
               color: AppColors.textSecondary,
-              fontSize: 12,
+              fontSize: 11.sp,
             ),
           ),
         );

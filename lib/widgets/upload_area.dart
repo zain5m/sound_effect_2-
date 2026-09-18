@@ -1,8 +1,10 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/app_open_ad_manager.dart';
 import '../providers/audio_app_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -10,7 +12,10 @@ class UploadArea extends StatelessWidget {
   const UploadArea({super.key});
 
   Future<void> _pickFile(BuildContext context) async {
-    final result = await FilePicker.pickFiles(type: FileType.audio);
+    final appOpenAdManager = context.read<AppOpenAdManager>();
+    final result = await appOpenAdManager.runWithoutAppOpenAd(
+      () => FilePicker.pickFiles(type: FileType.audio),
+    );
     if (result == null || result.files.isEmpty) return;
     final file = result.files.single;
     if (file.path == null) return;
@@ -35,41 +40,38 @@ class UploadArea extends StatelessWidget {
           );
         }
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+          padding: REdgeInsets.fromLTRB(20, 20, 20, 100),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: () => _pickFile(context),
-              borderRadius: BorderRadius.circular(AppRadii.card),
+              borderRadius: BorderRadius.circular(AppRadii.card.r),
               child: Ink(
                 width: double.infinity,
                 decoration: AppDecorations.pastelPanel(AppColors.primaryLight),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 50,
-                    horizontal: 30,
-                  ),
+                  padding: REdgeInsets.symmetric(vertical: 50, horizontal: 30),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 72,
-                        height: 72,
+                        width: 72.r,
+                        height: 72.r,
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.8),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.music_note_rounded,
-                          size: 36,
+                          size: 36.r,
                           color: AppColors.primaryDark,
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      RSizedBox(height: 18),
                       Text(
                         'انقر لاختيار الملف الصوتي',
                         style: GoogleFonts.tajawal(
-                          fontSize: 20,
+                          fontSize: 20.sp,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -109,27 +111,27 @@ class UploadedFileCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onChange,
-        borderRadius: BorderRadius.circular(AppRadii.card),
+        borderRadius: BorderRadius.circular(AppRadii.card.r),
         child: Ink(
           decoration: AppDecorations.softCard(),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: REdgeInsets.all(20),
             child: Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 40.r,
+                  height: 40.r,
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.audio_file_rounded,
                     color: AppColors.primaryDark,
                     size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
+                RSizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,16 +140,16 @@ class UploadedFileCard extends StatelessWidget {
                         'الملف الحالي',
                         style: GoogleFonts.tajawal(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: 13.sp,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      RSizedBox(height: 4),
                       Text(
                         fileName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.tajawal(
-                          fontSize: 17,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -158,22 +160,24 @@ class UploadedFileCard extends StatelessWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: onChange,
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    borderRadius: BorderRadius.circular(AppRadii.pill.r),
                     child: Ink(
-                      padding: const EdgeInsets.symmetric(
+                      padding: REdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
                       ),
-                      decoration: AppDecorations.pillButton(AppColors.accentLight),
+                      decoration: AppDecorations.pillButton(
+                        AppColors.accentLight,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.swap_horiz_rounded,
-                            size: 18,
+                            size: 18.r,
                             color: AppColors.success,
                           ),
-                          const SizedBox(width: 6),
+                          RSizedBox(width: 6),
                           Text(
                             'تغيير',
                             style: GoogleFonts.tajawal(

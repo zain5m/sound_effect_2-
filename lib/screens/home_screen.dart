@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sound_effect_2/main.dart';
@@ -125,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 SingleChildScrollView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                  padding: REdgeInsets.fromLTRB(20, 20, 20, 100),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
                     child: Column(
@@ -140,11 +141,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           key: _splitKey,
                           child: const SplitSettingsPanel(),
                         ),
-                        const SizedBox(height: 10),
+                        RSizedBox(height: 10),
                         const WaveformSection(),
-                        const SizedBox(height: 20),
+                        RSizedBox(height: 20),
                         const SegmentsSection(),
-                        SizedBox(height: 50),
+                        RSizedBox(height: 50),
                       ],
                     ),
                   ),
@@ -179,13 +180,13 @@ class LoadingOverlay extends StatelessWidget {
               color: Colors.black38,
               child: Center(
                 child: Container(
-                  width: 320,
-                  padding: const EdgeInsets.all(28),
+                  width: 320.r,
+                  padding: REdgeInsets.all(28),
                   decoration: AppDecorations.softCard(),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const SizedBox(
+                      RSizedBox(
                         width: 44,
                         height: 44,
                         child: CircularProgressIndicator(
@@ -193,14 +194,14 @@ class LoadingOverlay extends StatelessWidget {
                           strokeWidth: 3,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      RSizedBox(height: 24),
                       Text(
                         state.message.isEmpty
                             ? 'جاري تنفيذ العملية...'
                             : state.message,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.tajawal(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
